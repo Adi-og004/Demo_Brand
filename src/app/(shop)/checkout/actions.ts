@@ -1,6 +1,10 @@
 "use server";
 
 import { createClient } from "@/utils/supabase/server";
+import { Resend } from "resend";
+
+const resend = new Resend(process.env.RESEND_API_KEY);
+const ownerEmail = process.env.OWNER_EMAIL || "admin@example.com";
 
 export async function processCheckout(formData: FormData, cartItems: any[], totalAmount: number) {
   const supabase = await createClient();
@@ -72,6 +76,32 @@ export async function processCheckout(formData: FormData, cartItems: any[], tota
         .insert(orderItems);
       
       if (itemsError) throw new Error("Failed to add items to order: " + itemsError.message);
+    }
+
+    // Send Emails
+    try {
+      if (process.env.RESEND_API_KEY) {
+        // Customer Email
+        await resend.emails.send({
+          from: "Aura Audio <onboarding@resend.dev>",
+          to: email,
+          subject: "Your Aura Audio Order Confirmation",
+          html: `<h1>Thank you for your order, ${name}!</h1><p>We have successfully received your order for $${totalAmount.toFixed(2)}. We will process it shortly.</p>`
+        });
+        
+        // Owner Email
+        await resend.emails.send({
+          from: "Aura Audio Alerts <onboarding@resend.dev>",
+          to: ownerEmail,
+          subject: `New Order Received - $${totalAmount.toFixed(2)}`,
+          html: `<h1>New Order Alert</h1><p><strong>Customer:</strong> ${name} (${email})</p><p><strong>Phone:</strong> ${phone}</p><p><strong>Address:</strong> ${address}</p><p><strong>Total:</strong> $${totalAmount.toFixed(2)}</p>`
+        });
+      } else {
+        console.warn("RESEND_API_KEY is not set. Emails were not sent.");
+      }
+    } catch (emailError) {
+      console.error("Failed to send emails:", emailError);
+      // We don't fail the whole checkout if emails fail.
     }
 
     return { success: true };

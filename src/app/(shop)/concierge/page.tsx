@@ -1,4 +1,24 @@
+"use client";
+
+import { useState } from "react";
+import { submitSupportRequest } from "./actions";
+
 export default function Concierge() {
+  const [isSubmitted, setIsSubmitted] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setIsLoading(true);
+    const formData = new FormData(e.currentTarget);
+    const result = await submitSupportRequest(formData);
+    if (result.success) {
+      setIsSubmitted(true);
+    } else {
+      alert("Something went wrong. Please try again.");
+    }
+    setIsLoading(false);
+  };
   return (
     <div className="flex-grow pt-[120px] pb-12 px-margin-mobile md:px-margin-desktop max-w-container-max mx-auto w-full flex flex-col gap-12">
       {/* Header Section */}
@@ -12,7 +32,14 @@ export default function Concierge() {
         {/* Support Form (Left Col - 7/12) */}
         <section className="md:col-span-7 bg-[rgba(32,31,31,0.6)] backdrop-blur-[20px] border border-outline-variant rounded-xl p-8 shadow-[0px_20px_40px_rgba(0,0,0,0.4)]">
           <h2 className="font-headline-lg-mobile text-headline-lg-mobile text-on-surface mb-8">Technical Support Request</h2>
-          <form action="#" className="flex flex-col gap-6" method="POST">
+          
+          {isSubmitted ? (
+            <div className="bg-primary/20 border border-primary text-primary p-6 rounded-lg text-center font-body-md">
+              <h3 className="font-display-sm mb-2">Request Received</h3>
+              <p>Thank you for reaching out. A confirmation email has been sent to you, and our concierge team will be in touch shortly.</p>
+            </div>
+          ) : (
+          <form onSubmit={handleSubmit} className="flex flex-col gap-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="flex flex-col">
                 <label className="font-label-mono text-label-mono text-on-surface-variant uppercase tracking-widest mb-2" htmlFor="name">Full Name</label>
@@ -32,9 +59,12 @@ export default function Concierge() {
               <textarea className="bg-surface-container-high border border-outline-variant focus:outline-none focus:border-primary focus:shadow-[0_0_12px_rgba(152,203,255,0.4)] p-3 rounded text-on-surface font-body-md text-body-md w-full resize-none transition-all duration-300" id="issue" name="issue" required rows={4}></textarea>
             </div>
             <div className="pt-4">
-              <button className="bg-primary text-on-primary font-label-mono text-label-mono uppercase tracking-widest px-8 py-4 rounded hover:bg-primary-fixed-dim transition-colors duration-300 w-full md:w-auto" type="submit">Submit Request</button>
+              <button disabled={isLoading} className="bg-primary text-on-primary font-label-mono text-label-mono uppercase tracking-widest px-8 py-4 rounded hover:bg-primary-fixed-dim transition-colors duration-300 w-full md:w-auto disabled:opacity-50" type="submit">
+                {isLoading ? "Submitting..." : "Submit Request"}
+              </button>
             </div>
           </form>
+          )}
         </section>
 
         {/* Right Column Stack (5/12) */}
